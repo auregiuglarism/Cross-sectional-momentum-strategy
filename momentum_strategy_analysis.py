@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 # --- Load the index data ---
 df = pd.read_csv("momentum.csv", parse_dates=["Date"])
@@ -110,16 +111,111 @@ performance_summary = pd.DataFrame({
 })
 
 # Display performance evaluation
-print("\nPerformance Summary:")
-print(performance_summary)
+# print("\nPerformance Summary:")
+# print(performance_summary)
 
 # Plot cumulative growth of $1 invested in each portfolio
-growth = (1 + portfolio_returns).cumprod()
-growth.plot(figsize=(12,6))
-plt.title("Growth of $1 Invested")
-plt.ylabel("Portfolio Value")
-plt.grid(True)
-plt.show()
+# growth = (1 + portfolio_returns).cumprod()
+# growth.plot(figsize=(12,6))
+# plt.title("Growth of $1 Invested")
+# plt.ylabel("Portfolio Value")
+# plt.grid(True)
+# plt.show()
+
+# --- Step IV bis:  Annualized stats for individual ETFs (not portfolios) ---
+# Number of months in the dataset
+N = df.shape[0]
+# Geometric annualized return per asset
+annualized_return_assets = (df.add(1).prod())**(12 / N) - 1
+annualized_vol_assets = df.std() * (months_per_year**0.5)
+sharpe_ratio_assets = annualized_return_assets / annualized_vol_assets
+
+# --- Step V: Verification ---
+# Function to check calculated values against reference values
+def check_values(momentum_df, rank_df, portfolio_returns, reference):
+    """
+    Check calculated values against reference values.
+    
+    reference: dict with keys
+        - 'momentum': dict of {asset: value} for a given date
+        - 'rank_top': list of top 3 assets
+        - 'rank_bottom': list of bottom 3 assets
+        - 'portfolio': dict of portfolio returns for the date
+        - 'stats': dict of overall stats for a given asset
+    """
+    import numpy as np
+
+    date = reference['date']
+    tol = 1e-4  # tolerance for numerical comparison
+
+    print(f"\nChecking values for {date.date()}:")
+
+    # --- Momentum ---
+    for asset, ref_value in reference['momentum'].items():
+        calc_value = momentum_df.loc[date, asset]
+        if np.isclose(calc_value, ref_value, atol=tol):
+            print(f"Momentum {asset}: OK ({calc_value:.4%})")
+        else:
+            print(f"Momentum {asset}: MISMATCH! Calculated={calc_value:.4%}, Reference={ref_value:.4%}")
+
+    # --- Rankings ---
+    calc_top = list(rank_df.loc[date].nlargest(3).index)
+    calc_bottom = list(rank_df.loc[date].nsmallest(3).index)
+
+    if calc_top == reference['rank_top']:
+        print(f"Top 3 assets: OK ({calc_top})")
+    else:
+        print(f"Top 3 assets: MISMATCH! Calculated={calc_top}, Reference={reference['rank_top']}")
+
+    if calc_bottom == reference['rank_bottom']:
+        print(f"Bottom 3 assets: OK ({calc_bottom})")
+    else:
+        print(f"Bottom 3 assets: MISMATCH! Calculated={calc_bottom}, Reference={reference['rank_bottom']}")
+
+    # --- Portfolio Returns ---
+    for pf, ref_value in reference['portfolio'].items():
+        calc_value = portfolio_returns.loc[date, pf]
+        if np.isclose(calc_value, ref_value, atol=tol):
+            print(f"{pf} return: OK ({calc_value:.4%})")
+        else:
+            print(f"{pf} return: MISMATCH! Calculated={calc_value:.4%}, Reference={ref_value:.4%}")
+
+    # --- Overall stats ---
+    for asset, stats in reference.get('stats', {}).items():
+        calc_return = annualized_return_assets[asset]
+        calc_vol = annualized_vol_assets[asset]
+
+        if np.isclose(calc_return, stats['annual_return'], atol=tol):
+            print(f"{asset} annual return: OK ({calc_return:.2%})")
+        else:
+            print(f"{asset} annual return: MISMATCH! Calculated={calc_return:.2%}, Reference={stats['annual_return']:.2%})")
+
+        if 'annual_vol' in stats:
+            if np.isclose(calc_vol, stats['annual_vol'], atol=tol):
+                print(f"{asset} annual vol: OK ({calc_vol:.2%})")
+            else:
+                print(f"{asset} annual vol: MISMATCH! Calculated={calc_vol:.2%}, Reference={stats['annual_vol']:.2%})")
+
+# Reference values given
+reference_march2023 = {
+    'date': pd.Timestamp('2023-03-31'),
+    'momentum': {'VOX': -0.0190},
+    'rank_top': ['VDE', 'VIS', 'VPU'],
+    'rank_bottom': ['VOX', 'VCR', 'VNQ'],
+    'portfolio': {
+        'pf_mkt': 0.0101,
+        'pf_high': 0.0032,
+        'pf_low': 0.0183,
+        'pf_long_short': -0.0075,
+        'pf_ls_plus_mkt': 0.0026
+    },
+    'stats': {
+        'VOX': {'annual_return': 0.1072, 'annual_vol': 0.1640}
+    }
+}
+
+# Run check
+check_values(momentum_df, rank_df, portfolio_returns, reference_march2023)
 
 
 
