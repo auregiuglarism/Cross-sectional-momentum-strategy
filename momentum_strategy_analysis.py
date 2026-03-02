@@ -41,6 +41,7 @@ def run_momentum_strategy_analysis():
     pf_ls_plus_mkt = []
 
     dates = rank_df.index
+    # print(dates)
 
     for date in dates:
         ranks = rank_df.loc[date]
