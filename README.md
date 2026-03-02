@@ -7,4 +7,5 @@ The python file contains verification code to the check the calculated values ag
 
 The ***answering_questions.py*** file contains the code to answer some questions related to the momentum strategy to extract more information, using the results from the analysis.
 
+Here is the cumulative growth of $1 invested in each of the 5 portfolios, over the period January 2013 until December 2025:
 ![Portfolio performances](images/1_dollar_growth_portfolios.png)
