@@ -4,6 +4,10 @@ import numpy as np
 
 # --- Momentum Strategy Analysis ---
 def run_momentum_strategy_analysis():
+    """
+    momentum_strategy_analysis, 
+    compute momentum scores, ranks, construct portfolios, evaluate performance, and return results.
+    """
     # Load the index data 
     df = pd.read_csv("momentum.csv", parse_dates=["Date"])
     df.set_index("Date", inplace=True)
@@ -213,6 +217,7 @@ def check_values(momentum_df, rank_df, portfolio_returns, annualized_return_asse
                 print(f"{asset} annual vol: OK ({calc_vol:.2%})")
             else:
                 print(f"{asset} annual vol: MISMATCH! Calculated={calc_vol:.2%}, Reference={stats['annual_vol']:.2%})")
+
 
 # --- Execute the file directly for verification ---
 if __name__ == "__main__":
